@@ -1,0 +1,47 @@
+services:
+  # --- Banco de Dados (PostgreSQL) ---
+  db:
+    image: postgres:15-alpine
+    container_name: gamer_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123 # Troquem por algo seguro depois
+      POSTGRES_DB: gamer_social_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # --- Backend (Node.js API) ---
+  backend:
+    build: ./backend
+    container_name: gamer_backend
+    ports:
+      - '4000:4000' # Porta do servidor Node
+    volumes:
+      - ./backend:/app # Espelha sua pasta local para dentro do container
+      - /app/node_modules # Evita que o node_modules local sobrescreva o do container
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://admin:password123@db:5432/gamer_social_db
+      - PORT=4000
+    command: npm run dev # Comando para rodar em modo desenvolvimento
+
+  # --- Frontend (Next.js) ---
+  frontend:
+    build: ./frontend
+    container_name: gamer_frontend
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next # Importante para cache do Next.js
+    environment:
+      - WATCHPACK_POLLING=true # Ajuda o hot-reload no Windows/WSL
+    command: npm run dev
+
+volumes:
+  postgres_data:
