@@ -1,22 +1,43 @@
 # 🚀 Guia de Desenvolvimento & Padrões do Projeto
 
-Bem-vindo ao backend da nossa Rede Social Gamer! Este guia serve para mantermos o código organizado e evitarmos conflitos.
+Bem-vindo ao backend da nossa Rede Social Gamer! Este guia serve para mantermos o código organizado e evitarmos conflitos entre Felipe e Lucas.
 
 ## 📂 1. Estrutura de Pastas (Onde codar?)
 
-No backend, trabalhamos com uma arquitetura simples em camadas dentro de `src/`:
+No backend, trabalhamos com uma arquitetura simples em camadas dentro de `src/` e usamos o Prisma para o banco:
 
-* **`config/`**: Configurações de banco de dados e variáveis de ambiente.
-* **`controllers/`**: **AQUI VAI A LÓGICA.** É onde as funções recebem `req` e `res`.
+* **`src/config/`**: Configurações gerais (onde fica a instância do `prisma`).
+* **`src/controllers/`**: **AQUI VAI A LÓGICA.** É onde as funções recebem `req` e `res`.
     * *Ex:* `auth.controller.ts` (tem as funções `login` e `register`).
-* **`routes/`**: Define as URLs e chama os controllers.
+* **`src/routes/`**: Define as URLs e chama os controllers.
     * *Ex:* `router.post('/login', AuthController.login)`.
-* **`models/`** (ou `services/`): Se a lógica ficar complexa, ou para queries SQL puras, usamos aqui.
-* **`middlewares/`**: Funções que rodam *antes* do controller (ex: checar se está logado).
+* **`src/middlewares/`**: Funções que rodam *antes* do controller (ex: checar se está logado).
+* **`prisma/`**:
+    * `schema.prisma`: Onde definimos as tabelas do banco.
 
 ---
 
-## 🌳 2. Fluxo de Git (Git Flow Simplificado)
+## 💎 2. Prisma ORM (Banco de Dados)
+
+Nós não escrevemos SQL na mão. Usamos o Prisma para gerenciar o banco.
+
+### Fluxo de Trabalho:
+1.  Se precisar mudar o banco, edite o arquivo `prisma/schema.prisma`.
+2.  Rode o comando de migração (veja abaixo).
+3.  O Prisma atualiza o banco e os tipos do TypeScript automaticamente.
+
+### Comandos do Prisma:
+* **`npx prisma migrate dev --name nome-da-mudanca`**
+    * Rode isso sempre que alterar o `schema.prisma`. Ele cria a tabela no banco Docker.
+    * *Ex:* `npx prisma migrate dev --name create_reviews_table`
+* **`npx prisma studio`** 🌟 (Muito Útil)
+    * Abre um painel no seu navegador (tipo um Excel) para você ver, editar e criar dados no banco visualmente. Ótimo para testar se salvou mesmo.
+* **`npx prisma generate`**
+    * Se o VS Code parar de completar os nomes das tabelas, rode isso para ele "reler" o arquivo.
+
+---
+
+## 🌳 3. Fluxo de Git (Git Flow Simplificado)
 
 Nós nunca trabalhamos direto na `main`.
 
@@ -45,7 +66,7 @@ Nós nunca trabalhamos direto na `main`.
 
 ---
 
-## 📝 3. Padrão de Commits (Conventional Commits)
+## 📝 4. Padrão de Commits (Conventional Commits)
 
 Nós escrevemos as mensagens de commit em inglês e seguindo um padrão para facilitar a leitura do histórico.
 
@@ -62,17 +83,19 @@ Nós escrevemos as mensagens de commit em inglês e seguindo um padrão para fac
 ### Exemplos reais:
 * ✅ `feat(auth): implement login route with jwt`
 * ✅ `fix(games): correct game title validation`
-* ✅ `chore(db): add initial migration for users table`
+* ✅ `chore(prisma): add review model to schema`
 
 ---
 
-## 🛠️ 4. Comandos Essenciais
+## 🛠️ 5. Comandos Essenciais
 
 ### NPM (Node Package Manager)
 * `npm install`: Baixa as bibliotecas (rode sempre que alguém adicionar algo novo no `package.json`).
 * `npm run dev`: Roda o servidor backend em modo de desenvolvimento (reinicia sozinho quando salva).
-* `npm run build`: Transforma o TypeScript em JavaScript (para produção).
 
 ### Docker (Para rodar o Banco)
-* `docker-compose up -d`: Sobe o banco de dados e o projeto (se configurado- a flag "-d" serve para rodar o container e deixar o terminal liberado).
+* `docker-compose up`: Sobe o banco de dados e o projeto (se configurado).
 * `docker-compose down`: Desliga tudo.
+
+### Dica Importante sobre Instalação
+Se precisar instalar uma biblioteca nova (ex: axios), faça isso **dentro do container** ou garanta que sua versão local do Node seja igual à do Docker.

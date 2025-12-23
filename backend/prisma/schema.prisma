@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Usuários
+model User {
+  id            Int      @id @default(autoincrement())
+  username      String   @unique @db.VarChar(50)
+  email         String   @unique @db.VarChar(255)
+  passwordHash  String   @map("password_hash") @db.VarChar(255)
+  avatarUrl     String?  @map("avatar_url") @db.VarChar(255)
+  bio           String?  @db.Text
+  currentXp     Int      @default(0) @map("current_xp")
+  currentLevel  Int      @default(1) @map("current_level")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relações
+  reviews          Review[]
+  library          GameStatus[]
+  achievements     UserAchievement[]
+  
+  // Auto-relacionamento (Seguidores)
+  followedBy       Follows[] @relation("followedBy")
+  following        Follows[] @relation("following")
+
+  @@map("users") // Nome da tabela no banco
+}
+
+// 2. Jogos
+model Game {
+  id           Int      @id @default(autoincrement())
+  externalId   String   @unique @map("external_id") @db.VarChar(100)
+  title        String   @db.VarChar(200)
+  slug         String   @db.VarChar(255)
+  coverUrl     String?  @map("cover_url") @db.VarChar(255)
+  releaseYear  Int?     @map("release_year")
+  
+  // Relações
+  reviews      Review[]
+  libraryEntries GameStatus[]
+
+  @@map("games")
+}
+
+// 3. Plataformas (Opcional)
+model Platform {
+  id    Int    @id @default(autoincrement())
+  name  String @db.VarChar(100)
+  slug  String @db.VarChar(100)
+
+  libraryEntries GameStatus[]
+
+  @@map("platforms")
+}
+
+// 4. Reviews
+model Review {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @map("user_id")
+  gameId           Int      @map("game_id")
+  rating           Int      @db.SmallInt // TinyInt no Postgres é SmallInt
+  content          String?  @db.Text
+  containsSpoilers Boolean  @default(false) @map("contains_spoilers")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+// 5. Biblioteca (Backlog)
+model GameStatus {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  gameId      Int      @map("game_id")
+  platformId  Int?     @map("platform_id")
+  status      String   @db.VarChar(20) // PLAYING, COMPLETED...
+  hoursPlayed Int      @default(0) @map("hours_played")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  platform Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, gameId]) // Um user só tem um status por jogo
+  @@map("game_status")
+}
+
+// 6. Seguidores (Tabela Pivô Manual)
+model Follows {
+  followerId  Int      @map("follower_id")
+  followingId Int      @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("followedBy", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId]) // PK Composta
+  @@map("follows")
+}
+
+// 7. Gamificação
+model Achievement {
+  id          Int     @id @default(autoincrement())
+  title       String  @db.VarChar(100)
+  description String  @db.VarChar(255)
+  xpReward    Int     @map("xp_reward")
+  iconUrl     String? @map("icon_url")
+
+  users UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  userId        Int      @map("user_id")
+  achievementId Int      @map("achievement_id")
+  unlockedAt    DateTime @default(now()) @map("unlocked_at")
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+  @@map("user_achievements")
+}
