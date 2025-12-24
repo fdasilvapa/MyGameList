@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/db";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export class AuthController {
   // 1. REGISTRO DE USUÁRIO
@@ -33,14 +34,14 @@ export class AuthController {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // Criar usuário no banco (Usando os nomes exatos do seu Schema)
+      // Criar usuário no banco
       const user = await prisma.user.create({
         data: {
           username,
           email,
-          passwordHash: hashedPassword, // Mapeando para o campo correto
-          currentXp: 0, // Valor default explícito (opcional, já está no schema)
-          currentLevel: 1, // Valor default explícito (opcional)
+          passwordHash: hashedPassword,
+          currentXp: 0,
+          currentLevel: 1,
         },
       });
 
@@ -60,5 +61,45 @@ export class AuthController {
     }
   }
 
-  // O Login virá no próximo passo...
+  static async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+
+      // 1. Verifica se usuário existe
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(400).json({ error: "Credenciais inválidas." });
+      }
+
+      // 2. Compara a senha enviada com o Hash do banco
+      const isValuePassword = await bcrypt.compare(password, user.passwordHash);
+
+      if (!isValuePassword) {
+        return res.status(400).json({ error: "Credenciais inválidas." });
+      }
+
+      // 3. Gera o Token JWT
+      const secret = process.env.JWT_SECRET || "chave_secreta_padrao";
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        secret,
+        { expiresIn: "1d" } // Expira em 1 dia
+      );
+
+      // 4. Retorna dados + token
+      return res.status(200).json({
+        message: "Login realizado com sucesso!",
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Erro interno no login." });
+    }
+  }
+
 }
