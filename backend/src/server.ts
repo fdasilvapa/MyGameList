@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes";
 import gameRoutes from "./routes/games.routes";
 import libraryRoutes from "./routes/library.routes";
+import platformsRoutes from './routes/platforms.routes';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 app.use("/games", gameRoutes);
 app.use("/library", libraryRoutes);
+app.use('/platforms', platformsRoutes);
 
 
 app.get("/", (req, res) => {
