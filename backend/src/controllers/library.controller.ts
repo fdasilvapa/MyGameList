@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { prisma } from '../config/db';
+import { Request, Response } from "express";
+import { prisma } from "../config/db";
 
 export class LibraryController {
   // GET /library
@@ -19,8 +19,8 @@ export class LibraryController {
 
       return res.status(200).json(library);
     } catch (error) {
-      console.error('Erro ao buscar biblioteca:', error);
-      return res.status(500).json({ error: 'Erro interno ao carregar biblioteca.' });
+      console.error("Erro na biblioteca:", error);
+      return res.status(500).json({ error: "Erro ao carregar biblioteca." });
     }
   }
 
@@ -31,10 +31,8 @@ export class LibraryController {
       // Pega o userId do token (middleware) e os dados do jogo do corpo da req
       const { userId, gameId, status, hoursPlayed } = req.body;
 
-      const { gameId, platformId, status, hoursPlayed } = req.body;
-
-      if (!gameId || !platformId) {
-        return res.status(400).json({ error: 'ID do jogo e ID da plataforma são obrigatórios.' });
+      if (!gameId) {
+        return res.status(400).json({ error: "ID do jogo é obrigatório." });
       }
 
       // 1. Verifica se o jogo existe no catálogo global
@@ -67,18 +65,15 @@ export class LibraryController {
         data: {
           userId: Number(userId),
           gameId: Number(gameId),
-          platformId: Number(platformId),
-          status: status || 'PLAN_TO_PLAY',
-          hoursPlayed: Number(hoursPlayed) || 0
+          status: status || "PLAN_TO_PLAY",
+          hoursPlayed: Number(hoursPlayed) || 0,
         },
-        include: { game: true, platform: true }
       });
 
       return res.status(201).json(newEntry);
-
     } catch (error) {
-      console.error('Erro ao adicionar jogo à biblioteca:', error);
-      return res.status(500).json({ error: 'Erro interno ao salvar registro.' });
+      console.error("Erro ao adicionar:", error);
+      return res.status(500).json({ error: "Erro ao salvar na biblioteca." });
     }
   }
 
@@ -109,16 +104,16 @@ export class LibraryController {
       const updatedEntry = await prisma.gameStatus.update({
         where: { id: Number(id) },
         data: {
-          status: status || undefined,
-          hoursPlayed: hoursPlayed ? Number(hoursPlayed) : undefined
-        }
+          status,
+          hoursPlayed:
+            hoursPlayed !== undefined ? Number(hoursPlayed) : undefined,
+        },
       });
 
       return res.status(200).json(updatedEntry);
-
     } catch (error) {
-      console.error('Erro ao atualizar registro:', error);
-      return res.status(500).json({ error: 'Erro interno ao atualizar.' });
+      console.error("Erro ao atualizar:", error);
+      return res.status(500).json({ error: "Erro ao atualizar status." });
     }
   }
 }
