@@ -1,12 +1,9 @@
-import { Router } from 'express';
-import { listGames, createGame } from '../controllers/games.controller';
+import { Router } from "express";
+import { GamesController } from "../controllers/games.controller";
 
 const router = Router();
 
-// Rota GET: http://localhost:3000/games
-router.get('/', listGames);
-
-// Rota POST: http://localhost:3000/games
-router.post('/', createGame);
+router.get("/", GamesController.list);
+router.post("/", GamesController.create);
 
 export default router;

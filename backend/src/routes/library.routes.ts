@@ -1,15 +1,10 @@
-import { Router } from 'express';
-import { getLibrary, addGameToLibrary, updateGameStatus } from '../controllers/library.controller';
+import { Router } from "express";
+import { LibraryController } from "../controllers/library.controller";
 
 const router = Router();
 
-// GET /library -> Lista os jogos do usuário
-router.get('/', getLibrary);
-
-// POST /library -> Adiciona um jogo (JSON: { "gameId": 1, "status": "PLAYING" })
-router.post('/', addGameToLibrary);
-
-// PATCH /library/:id -> Atualiza status/horas (O :id é o ID do registro na biblioteca)
-router.patch('/:id', updateGameStatus);
+router.get("/", LibraryController.getLibrary);
+router.post("/", LibraryController.addGame);
+router.patch("/:id", LibraryController.updateStatus);
 
 export default router;
