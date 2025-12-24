@@ -1,7 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from "./routes/auth.routes"; // <--- 1. Importe as rotas aqui
+import authRoutes from "./routes/auth.routes";
+import gameRoutes from "./routes/games.routes";
+import libraryRoutes from "./routes/library.routes";
 
 dotenv.config();
 
@@ -13,6 +15,9 @@ app.use(express.json());
 
 // --- ROTAS DA APLICAÇÃO ---
 app.use("/auth", authRoutes);
+app.use("/games", gameRoutes);
+app.use("/library", libraryRoutes);
+
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend Gamer operante! 🚀" });
