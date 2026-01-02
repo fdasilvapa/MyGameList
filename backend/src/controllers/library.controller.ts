@@ -2,19 +2,19 @@ import { Request, Response } from "express";
 import { prisma } from "../config/db";
 
 export class LibraryController {
+  
   // GET /library
-  // Lista todos os jogos da biblioteca do usuário logado
   static async getLibrary(req: Request, res: Response) {
     try {
-      // O ID vem do AuthMiddleware que injetou no body
-      const { userId } = req.body;
+      const userId = (req as any).user?.id;
 
       const library = await prisma.gameStatus.findMany({
         where: { userId: Number(userId) },
         include: {
-          game: true, // Traz os detalhes do jogo (capa, título, etc)
+          game: true,
+          platform: true, 
         },
-        orderBy: { updatedAt: "desc" }, // Opcional: Traz os modificados recentemente primeiro
+        orderBy: { updatedAt: "desc" },
       });
 
       return res.status(200).json(library);
@@ -25,49 +25,46 @@ export class LibraryController {
   }
 
   // POST /library
-  // Adiciona um jogo à biblioteca
-  static async addGame(req: Request, res: Response) {
+  static async addEntry(req: Request, res: Response) {
     try {
-      // Pega o userId do token (middleware) e os dados do jogo do corpo da req
-      const { userId, gameId, status, hoursPlayed } = req.body;
+      const userId = (req as any).user?.id; // ID seguro do token
+      
+      const { gameId, platformId, status, hoursPlayed } = req.body;
 
-      if (!gameId) {
-        return res.status(400).json({ error: "ID do jogo é obrigatório." });
+      if (!gameId || !platformId) {
+        return res.status(400).json({ error: "ID do jogo e Plataforma são obrigatórios." });
       }
 
-      // 1. Verifica se o jogo existe no catálogo global
-      const game = await prisma.game.findUnique({
-        where: { id: Number(gameId) },
-      });
+      // Validações
+      const game = await prisma.game.findUnique({ where: { id: Number(gameId) } });
+      if (!game) return res.status(404).json({ error: "Jogo não encontrado." });
 
-      if (!game) {
-        return res.status(404).json({ error: "Jogo não encontrado." });
-      }
+      const platform = await prisma.platform.findUnique({ where: { id: Number(platformId) } });
+      if (!platform) return res.status(404).json({ error: "Plataforma não encontrada." });
 
-      // 2. Verifica se já está na biblioteca deste usuário específico
-      const existingEntry = await prisma.gameStatus.findUnique({
+      // Verifica duplicidade
+      const existingEntry = await prisma.gameStatus.findFirst({
         where: {
-          userId_gameId: {
             userId: Number(userId),
             gameId: Number(gameId),
-          },
+            // Se seu schema permitir ter o mesmo jogo em plataformas diferentes, 
+            // adicione 'platformId: Number(platformId)' aqui dentro do where.
         },
       });
 
       if (existingEntry) {
-        return res
-          .status(409)
-          .json({ error: "Jogo já está na sua biblioteca." });
+        return res.status(409).json({ error: "Jogo já está na sua biblioteca." });
       }
 
-      // 3. Adiciona
       const newEntry = await prisma.gameStatus.create({
         data: {
           userId: Number(userId),
           gameId: Number(gameId),
+          platformId: Number(platformId), // Salvando a plataforma!
           status: status || "PLAN_TO_PLAY",
           hoursPlayed: Number(hoursPlayed) || 0,
         },
+        include: { game: true, platform: true }
       });
 
       return res.status(201).json(newEntry);
@@ -78,13 +75,13 @@ export class LibraryController {
   }
 
   // PATCH /library/:id
-  // Atualiza status ou horas jogadas de um item específico
-  static async updateStatus(req: Request, res: Response) {
+  static async updateEntry(req: Request, res: Response) {
     try {
-      const { id } = req.params; // ID do registro na tabela GameStatus
-      const { userId, status, hoursPlayed } = req.body; // userId vem do Token
+      const { id } = req.params;
+      const userId = (req as any).user?.id; // ID seguro do token
+      const { status, hoursPlayed } = req.body;
 
-      // 1. SEGURANÇA: Verificar se esse registro pertence ao usuário logado
+      // Garante que o registro pertence ao usuário logado
       const entry = await prisma.gameStatus.findFirst({
         where: {
           id: Number(id),
@@ -93,20 +90,14 @@ export class LibraryController {
       });
 
       if (!entry) {
-        return res
-          .status(404)
-          .json({
-            error: "Registro não encontrado ou você não tem permissão.",
-          });
+        return res.status(404).json({ error: "Registro não encontrado ou acesso negado." });
       }
 
-      // 2. Atualiza
       const updatedEntry = await prisma.gameStatus.update({
         where: { id: Number(id) },
         data: {
-          status,
-          hoursPlayed:
-            hoursPlayed !== undefined ? Number(hoursPlayed) : undefined,
+          status: status || undefined, // Só atualiza se enviar valor
+          hoursPlayed: hoursPlayed !== undefined ? Number(hoursPlayed) : undefined,
         },
       });
 

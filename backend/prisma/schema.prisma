@@ -87,9 +87,11 @@ model GameStatus {
   game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
   platform Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, gameId]) // Um user só tem um status por jogo
+  @@unique([userId, gameId, platformId]) 
+  
   @@map("game_status")
 }
+
 
 // 6. Seguidores (Tabela Pivô Manual)
 model Follows {
