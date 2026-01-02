@@ -27,9 +27,9 @@ export const authMiddleware = (
 
     const { id, username } = decoded as TokenPayload;
 
-    req.body.userId = id;
-    // DICA: Jogar no body é uma "gambiarra" funcional rápida.
-    // O ideal é estender a interface Request, mas para a Sprint 1 isso funciona.
+    // CORREÇÃO: Em vez de sujar o req.body, criamos o objeto user no req
+    // Isso funciona para GET, POST, DELETE, tudo.
+    (req as any).user = { id, username };
 
     return next();
   } catch (error) {
