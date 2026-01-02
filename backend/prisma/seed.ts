@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 
-const prisma = new PrismaClient()
+const connectionString = process.env.DATABASE_URL
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   console.log('🌱 Iniciando o Seed do Banco de Dados...')
@@ -34,7 +39,6 @@ async function main() {
   }
 
   // --- 2. JOGOS ---
-  // Aqui o UPSERT funciona porque 'externalId' é @unique no seu schema
   const games = [
     {
       title: 'The Witcher 3: Wild Hunt',
@@ -76,17 +80,16 @@ async function main() {
   console.log('💿 Criando Jogos...')
   
   for (const game of games) {
-    // Upsert funciona aqui pois externalId é único
     await prisma.game.upsert({
       where: { externalId: game.slug }, 
-      update: {}, // Não faz nada se já existir
+      update: {}, 
       create: {
         title: game.title,
         slug: game.slug,
-        externalId: game.slug, // Usando slug como ID externo
+        externalId: game.slug, 
         releaseYear: game.releaseYear,
         coverUrl: game.coverUrl,
-        // description: game.description // Descomente se tiver adicionado o campo
+        // description: game.description 
       }
     })
   }
@@ -102,4 +105,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-  
