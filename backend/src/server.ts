@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes";
 import gameRoutes from "./routes/games.routes";
 import libraryRoutes from "./routes/library.routes";
 import platformsRoutes from './routes/platforms.routes';
+import usersRoutes from './routes/users.routes';
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ app.use("/auth", authRoutes);
 app.use("/games", gameRoutes);
 app.use("/library", libraryRoutes);
 app.use('/platforms', platformsRoutes);
-
+app.use('/users', usersRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Backend Gamer operante! 🚀" });
